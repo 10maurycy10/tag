@@ -1,5 +1,9 @@
 import sqlite3
 
+def intersection(lst1, lst2):
+    lst3 = [value for value in lst1 if value in lst2]
+    return lst3
+
 class TagDB:
     def __init__(self, filename):
         self.con = sqlite3.connect(filename)
@@ -32,3 +36,24 @@ class TagDB:
         cur.execute("DELETE FROM tagdb WHERE filename=?;", (filename,))
         cur = self.con.cursor()
         cur.executemany("INSERT INTO tagdb (filename, tagname, data) values (?, ?, ?)", [(filename, tag[0], tag[1]) for tag in tags])
+
+    def get_with_tag(self, tagname, value=None):
+        cur = self.con.cursor()
+        if value == None:
+            cur.execute("SELECT filename FROM tagdb WHERE tagname=? GROUP BY filename;", (tagname, ));
+        else:
+            cur.execute("SELECT filename FROM tagdb WHERE tagname=? and data=? GROUP BY filename;", (tagname, value));
+        return [f for f in cur]
+
+    # TODO use sql for this.
+    def get_with_tags(self, tags):
+        matching = None
+        for (key, value) in tags:
+            filenames = self.get_with_tag(key, value=value)
+            if matching == None:
+                matching = filenames
+            else:
+                matching = intersection(matching, filenames)
+        return matching
+
+
